@@ -6,7 +6,7 @@ TalMath = {
 	-- Configuration
 	config = {
 		use_bignum = true, -- Whether to use big numbers at all
-		auto_convert = false, -- Whether to automatically convert between types
+		auto_convert = true, -- Whether to automatically convert between types
 		conversion_threshold = 1e300, -- When regular numbers should become bignums
 		display_threshold = 1e10, -- When to switch to scientific notation for display
 	},
@@ -45,7 +45,7 @@ end
 
 -- CORE TYPE OPERATIONS
 
--- Convert to big number ONLY if necessary
+-- Convert to big number always for consistency
 function TalMath.ensureBig(x)
 	-- Don't convert if bignums are disabled
 	if not TalMath.config.use_bignum then
@@ -57,27 +57,28 @@ function TalMath.ensureBig(x)
 		return x
 	end
 
-	-- Regular number - convert only if above threshold or auto-convert is on
-	if type(x) == "number" then
-		if math.abs(x) >= TalMath.config.conversion_threshold or TalMath.config.auto_convert then
-			return Big:new(x)
-		else
-			return x
-		end
-	end
-
-	-- String number
-	if type(x) == "string" and tonumber(x) then
-		local num = tonumber(x)
-		if math.abs(num) >= TalMath.config.conversion_threshold or TalMath.config.auto_convert then
-			return Big:new(num)
-		else
-			return num
-		end
-	end
-
-	-- Otherwise try direct conversion
+	-- Always convert to BigNumber for consistency
 	return Big:new(x)
+end
+
+function TalMath.bignumCanBeConverted(x)
+	-- Check if a big number can be converted to a regular number without losing precision
+	if type(x) ~= "table" or getmetatable(x) ~= BigMeta then
+		return true -- Already a regular number
+	end
+
+	-- Check if it's within the safe range for Lua numbers
+	if x:gt(Big:new(1e308)) or x:lt(Big:new(-1e308)) then
+		return false
+	end
+
+	-- Check if conversion would result in infinity or NaN
+	local value = x:to_number()
+	if value ~= value or value == math.huge or value == -math.huge then
+		return false
+	end
+
+	return true
 end
 
 -- Convert big number to regular number if possible
@@ -89,6 +90,11 @@ function TalMath.toNumber(x)
 
 	-- Try to convert big number to regular number
 	if type(x) == "table" and getmetatable(x) == BigMeta then
+		-- Special handling for values too large for Lua numbers
+		if x:gt(Big:new(1e308)) or x:lt(Big:new(-1e308)) then
+			return x -- TODO - Return the BigNumber itself for very large values - or maybe just naneinf
+		end
+
 		local value = x:to_number()
 		-- Check if result is valid and in range
 		if value == value and value ~= math.huge and value ~= -math.huge then
@@ -97,7 +103,6 @@ function TalMath.toNumber(x)
 	end
 
 	-- Can't convert, return as is
-	-- TODO this smells - here we return a bignumber?
 	return x
 end
 
@@ -147,22 +152,25 @@ end
 
 -- Addition
 function TalMath.add(a, b)
-	-- Fast path for regular numbers
-	if type(a) == "number" and type(b) == "number" then
-		local result = a + b
-		-- Convert to big number if result exceeds threshold
-		if math.abs(result) >= TalMath.config.conversion_threshold then
-			-- TODO: We need to make the addition in "big domain" land
-			return TalMath.ensureBig(result)
-		end
-		return result
-	end
-
-	-- Ensure both are big numbers if either one is
+	-- If either operand is a big number, convert both to big numbers
 	if type(a) == "table" or type(b) == "table" then
 		a = TalMath.ensureBig(a)
 		b = TalMath.ensureBig(b)
 		return a + b -- Using operator overloading
+	end
+
+	-- Regular numbers
+	if type(a) == "number" and type(b) == "number" then
+		-- Check if result would exceed threshold and use big numbers if needed
+		if
+			math.abs(a) > TalMath.config.conversion_threshold / 2
+			or math.abs(b) > TalMath.config.conversion_threshold / 2
+		then
+			return TalMath.ensureBig(a) + TalMath.ensureBig(b)
+		end
+
+		-- Else stay in regular number land
+		return a + b
 	end
 
 	-- Fallback
@@ -171,21 +179,30 @@ end
 
 -- Subtraction
 function TalMath.subtract(a, b)
-	-- Fast path for regular numbers
-	if type(a) == "number" and type(b) == "number" then
-		local result = a - b
-		-- Convert to big number if result exceeds threshold
-		if math.abs(result) >= TalMath.config.conversion_threshold then
-			return TalMath.ensureBig(result)
-		end
-		return result
-	end
-
-	-- Ensure both are big numbers if either one is
+	-- If either operand is a big number, convert both to big numbers
 	if type(a) == "table" or type(b) == "table" then
 		a = TalMath.ensureBig(a)
 		b = TalMath.ensureBig(b)
 		return a - b -- Leveraging operator overloading defined in Bignumber
+	end
+
+	-- Fast path for regular numbers
+	if type(a) == "number" and type(b) == "number" then
+		-- Attempt regular subtraction
+		local result = a - b
+
+		-- Check if result is valid (not NaN or infinity)
+		if
+			result ~= result
+			or result == math.huge
+			or result == -math.huge
+			or math.abs(result >= TalMath.config.conversion_threshold)
+		then
+			-- If invalid, use big numbers instead
+			return TalMath.ensureBig(a) - TalMath.ensureBig(b)
+		end
+
+		return result
 	end
 
 	-- Fallback
@@ -194,6 +211,13 @@ end
 
 -- Multiplication
 function TalMath.multiply(a, b)
+	-- If either operand is a big number, convert both to big numbers
+	if type(a) == "table" or type(b) == "table" then
+		a = TalMath.ensureBig(a)
+		b = TalMath.ensureBig(b)
+		return a * b -- Using operator overloading
+	end
+
 	-- Fast path for regular numbers
 	if type(a) == "number" and type(b) == "number" then
 		local result = a * b
@@ -204,19 +228,19 @@ function TalMath.multiply(a, b)
 		return result
 	end
 
-	-- Ensure both are big numbers if either one is
-	if type(a) == "table" or type(b) == "table" then
-		a = TalMath.ensureBig(a)
-		b = TalMath.ensureBig(b)
-		return a * b -- Using operator overloading
-	end
-
 	-- Fallback
 	return a * b
 end
 
 -- Division
 function TalMath.divide(a, b)
+	-- If either operand is a big number, convert both to big numbers
+	if type(a) == "table" or type(b) == "table" then
+		a = TalMath.ensureBig(a)
+		b = TalMath.ensureBig(b)
+		return a / b -- Using operator overloading
+	end
+
 	-- Fast path for regular numbers
 	if type(a) == "number" and type(b) == "number" and b ~= 0 then
 		local result = a / b
@@ -227,19 +251,19 @@ function TalMath.divide(a, b)
 		return result
 	end
 
-	-- Ensure both are big numbers if either one is
-	if type(a) == "table" or type(b) == "table" then
-		a = TalMath.ensureBig(a)
-		b = TalMath.ensureBig(b)
-		return a / b -- Using operator overloading
-	end
-
 	-- Fallback
 	return a / b
 end
 
 -- Power
 function TalMath.power(base, exponent)
+	-- If either operand is a big number, convert base to big number
+	if type(base) == "table" or type(exponent) == "table" then
+		base = TalMath.ensureBig(base)
+		exponent = TalMath.toNumber(exponent) -- Most big number implementations want regular number exponents
+		return base:pow(exponent)
+	end
+
 	-- Fast path for regular numbers
 	if type(base) == "number" and type(exponent) == "number" then
 		-- Only try this if it's likely to succeed without overflow
@@ -251,13 +275,6 @@ function TalMath.power(base, exponent)
 				return result
 			end
 		end
-	end
-
-	-- Ensure both are big numbers if either one is
-	if type(base) == "table" or type(exponent) == "table" then
-		base = TalMath.ensureBig(base)
-		exponent = TalMath.toNumber(exponent) -- Most big number implementations want regular number exponents
-		return base:pow(exponent)
 	end
 
 	-- For safety, convert both to big numbers for large exponentiation
@@ -383,7 +400,7 @@ function to_big(x, y)
 		TalMath.initialize()
 	end
 
-	-- Always return big number for compatibility
+	-- Always return big number for consistency
 	return TalMath.ensureBig(x)
 end
 
