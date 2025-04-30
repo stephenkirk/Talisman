@@ -6,7 +6,6 @@ TalMath = {
 	-- Configuration
 	config = {
 		use_bignum = true, -- Whether to use big numbers at all
-		auto_convert = true, -- Whether to automatically convert between types
 		conversion_threshold = 1e300, -- When regular numbers should become bignums
 		display_threshold = 1e10, -- When to switch to scientific notation for display
 	},
@@ -38,6 +37,7 @@ function TalMath.initialize()
 		TalMath.cache.pi = Big:new(3.14159265358979)
 	else
 		-- Fall back to regular Lua numbers
+		-- TODO: Not handled gracefully below
 		TalMath.config.use_bignum = false
 		print("[Talisman] Warning: BigNum provider not available, using regular numbers")
 	end
@@ -92,7 +92,7 @@ function TalMath.toNumber(x)
 	if type(x) == "table" and getmetatable(x) == BigMeta then
 		-- Special handling for values too large for Lua numbers
 		if x:gt(Big:new(1e308)) or x:lt(Big:new(-1e308)) then
-			return x -- TODO - Return the BigNumber itself for very large values - or maybe just naneinf
+			return x -- Return the BigNumber itself for very large values
 		end
 
 		local value = x:to_number()
@@ -103,24 +103,21 @@ function TalMath.toNumber(x)
 	end
 
 	-- Can't convert, return as is
+	-- TODO: Maybe fallback to return NaN or naneinf instead - not feeling super confident here
 	return x
 end
 
 -- Format for display
+-- TODO:
 function TalMath.format(value, places)
 	places = places or 3
 
 	-- Special case for zero and small numbers
+	-- TODO: Should reimplement default balatro formatting or just fallback
 	if value == 0 or (type(value) == "number" and math.abs(value) < TalMath.config.display_threshold) then
-		-- Format with commas for thousands
-		local str = tostring(math.floor(value * 10 ^ places + 0.5) / 10 ^ places)
-		local int, frac = string.match(str, "([^.]*)%.?(.*)")
-		int = int:reverse():gsub("(%d%d%d)", "%1,"):gsub(",$", ""):reverse()
-		if frac and frac ~= "" then
-			return int .. "." .. frac
-		else
-			return int
-		end
+		-- TODO: Regular formatting
+		-- Should reimplement default balatro formatting or just fallback
+		return tostring(value)
 	end
 
 	-- Ensure value is a big number for consistent formatting
@@ -161,16 +158,19 @@ function TalMath.add(a, b)
 
 	-- Regular numbers
 	if type(a) == "number" and type(b) == "number" then
-		-- Check if result would exceed threshold and use big numbers if needed
+		-- Perform addition and check for potential overflow
+		local result = a + b
 		if
-			math.abs(a) > TalMath.config.conversion_threshold / 2
-			or math.abs(b) > TalMath.config.conversion_threshold / 2
+			result ~= result
+			or result == math.huge
+			or result == -math.huge
+			or math.abs(result) >= TalMath.config.conversion_threshold
 		then
+			-- Use big numbers if regular addition resulted in NaN or infinity
 			return TalMath.ensureBig(a) + TalMath.ensureBig(b)
 		end
 
-		-- Else stay in regular number land
-		return a + b
+		return result
 	end
 
 	-- Fallback
@@ -196,7 +196,7 @@ function TalMath.subtract(a, b)
 			result ~= result
 			or result == math.huge
 			or result == -math.huge
-			or math.abs(result >= TalMath.config.conversion_threshold)
+			or math.abs(result) >= TalMath.config.conversion_threshold
 		then
 			-- If invalid, use big numbers instead
 			return TalMath.ensureBig(a) - TalMath.ensureBig(b)
@@ -220,11 +220,29 @@ function TalMath.multiply(a, b)
 
 	-- Fast path for regular numbers
 	if type(a) == "number" and type(b) == "number" then
-		local result = a * b
-		-- Convert to big number if result exceeds threshold
-		if math.abs(result) >= TalMath.config.conversion_threshold then
-			return TalMath.ensureBig(result)
+		-- Check if result might overflow
+		if
+			math.abs(a) > 0
+			and math.abs(b) > 0
+			and (math.abs(a) > TalMath.config.conversion_threshold / math.abs(b))
+		then
+			return TalMath.ensureBig(a) * TalMath.ensureBig(b)
 		end
+
+		-- Attempt regular multiplication
+		local result = a * b
+
+		-- Check if result is valid (not NaN or infinity)
+		if
+			result ~= result
+			or result == math.huge
+			or result == -math.huge
+			or math.abs(result) >= TalMath.config.conversion_threshold
+		then
+			-- If invalid, use big numbers instead
+			return TalMath.ensureBig(a) * TalMath.ensureBig(b)
+		end
+
 		return result
 	end
 
@@ -241,13 +259,33 @@ function TalMath.divide(a, b)
 		return a / b -- Using operator overloading
 	end
 
-	-- Fast path for regular numbers
-	if type(a) == "number" and type(b) == "number" and b ~= 0 then
-		local result = a / b
-		-- Convert to big number if result exceeds threshold
-		if math.abs(result) >= TalMath.config.conversion_threshold then
-			return TalMath.ensureBig(result)
+	-- Handle division by zero
+	if type(b) == "number" and b == 0 then
+		if type(a) == "number" and a == 0 then
+			return 0 / 0 -- NaN for 0/0
+		elseif type(a) == "number" and a > 0 then
+			return TalMath.ensureBig(a) / TalMath.ensureBig(b) -- Use big number division
+		elseif type(a) == "number" and a < 0 then
+			return TalMath.ensureBig(a) / TalMath.ensureBig(b) -- Use big number division
 		end
+	end
+
+	-- Fast path for regular numbers
+	if type(a) == "number" and type(b) == "number" then
+		-- Attempt regular division
+		local result = a / b
+
+		-- Check if result is valid (not NaN or infinity)
+		if
+			result ~= result
+			or result == math.huge
+			or result == -math.huge
+			or math.abs(result) >= TalMath.config.conversion_threshold
+		then
+			-- If invalid, use big numbers instead
+			return TalMath.ensureBig(a) / TalMath.ensureBig(b)
+		end
+
 		return result
 	end
 
@@ -259,6 +297,7 @@ end
 function TalMath.power(base, exponent)
 	-- If either operand is a big number, convert base to big number
 	if type(base) == "table" or type(exponent) == "table" then
+		-- TODO - needs review
 		base = TalMath.ensureBig(base)
 		exponent = TalMath.toNumber(exponent) -- Most big number implementations want regular number exponents
 		return base:pow(exponent)
@@ -266,18 +305,37 @@ function TalMath.power(base, exponent)
 
 	-- Fast path for regular numbers
 	if type(base) == "number" and type(exponent) == "number" then
-		-- Only try this if it's likely to succeed without overflow
-		if math.abs(base) < 1000 and math.abs(exponent) < 100 then
-			local success, result = pcall(function()
-				return base ^ exponent
-			end)
-			if success and result == result and math.abs(result) < TalMath.config.conversion_threshold then
-				return result
-			end
+		-- Special cases where we know we need big numbers
+		if
+			exponent > 0
+			and math.abs(base) > 10
+			and exponent > math.log(TalMath.config.conversion_threshold) / math.log(math.abs(base))
+		then
+			return TalMath.ensureBig(base):pow(exponent)
 		end
+
+		-- Try regular power operation safely
+		local success, result = pcall(function()
+			return base ^ exponent
+		end)
+
+		-- Check if result is valid and not too large
+		if
+			not success
+			or result ~= result
+			or result == math.huge
+			or result == -math.huge
+			or math.abs(result) >= TalMath.config.conversion_threshold
+		then
+			-- If invalid or too large, use big numbers instead
+			return TalMath.ensureBig(base):pow(exponent)
+		end
+
+		return result
 	end
 
 	-- For safety, convert both to big numbers for large exponentiation
+	-- todo: needs proper type checking to be a good fallback
 	base = TalMath.ensureBig(base)
 	return base:pow(exponent)
 end
@@ -394,6 +452,7 @@ end
 -- MONKEY PATCHING FOR BACKWARD COMPATIBILITY
 
 -- Create backward compatibility wrappers
+-- THIS IS TODO CITY
 function to_big(x, y)
 	-- Initialize if not already done
 	if not TalMath.cache.provider_check then
@@ -420,6 +479,7 @@ _original_math = {
 	exp = math.exp,
 }
 
+-- TODO: Don't understand Talisman and Love enough to understand if monkey patching these are needed or what the extent of this monkey patching is
 function math.max(x, y)
 	-- Use simple comparison to determine maximum
 	if TalMath.gt(x, y) then
