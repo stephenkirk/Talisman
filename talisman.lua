@@ -166,7 +166,7 @@ if Talisman.config_file.break_infinity then
 		return obj
 	end
 
-	local big_value = TalMath.power(20, 300)
+	TalMathTests = nativefs.load(lovely.mod_dir .. "/Talisman/talisman-poc-tests.lua")()
 
 	local nf = number_format
 	function number_format(num, e_switch_point)

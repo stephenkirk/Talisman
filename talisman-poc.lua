@@ -37,9 +37,9 @@ function TalMath.initialize()
 	Big, err = nativefs.load(bignum_path)
 	if not err then
 		Big = Big()
-		-- Cache common constants as big numbers to avoid repeated conversions
-		TalMath.cache.e = Big:new(2.718281828459045)
-		TalMath.cache.pi = Big:new(3.14159265358979)
+		-- Cache common constants
+		TalMath.cache.e = 2.718281828459045
+		TalMath.cache.pi = 3.14159265358979
 
 		-- Load notations
 		local Notations = nativefs.load(lovely.mod_dir .. "/Talisman/big-num/notations.lua")()
@@ -115,12 +115,12 @@ function TalMath.format(value, places)
 
 	-- For big numbers, use scientific notation
 	-- TODO replicate notations/Balatro.lua here without to_big fuckery
-	if type(big_value) == "table" then
+	if type(value) == "table" then
 		local mantissa
 		local exponent
 
-		mantissa = math.floor(big_value.m * 10 ^ places + 0.5) / 10 ^ places
-		exponent = big_value.e
+		mantissa = math.floor(value.m * 10 ^ places + 0.5) / 10 ^ places
+		exponent = value.e
 		return mantissa .. "e" .. exponent
 	end
 
@@ -287,8 +287,6 @@ function TalMath.power(base, exponent)
 
 	-- Fast path for regular numbers
 	if type(base) == "number" and type(exponent) == "number" then
-		print("TalMath.power: Both types are regular numbers")
-		print(base .. "^^" .. exponent)
 		-- Special cases where we know we need big numbers
 		if
 			exponent > 0
@@ -296,11 +294,7 @@ function TalMath.power(base, exponent)
 			and exponent > math.log(TalMath.config.conversion_threshold) / math.log(math.abs(base))
 		then
 			local bigBase = TalMath.ensureBig(base)
-			print("Before power" .. bigBase.m .. "^^" .. bigBase.e)
-
 			local powered = bigBase:pow(exponent)
-			print("After power: " .. powered.m .. "^^" .. powered.e)
-
 			return powered
 		end
 
