@@ -429,7 +429,6 @@ function Big.parse(str)
 end
 
 function BigMeta.__concat(a, b)
-	a = Big:create(a)
 	return tostring(a) .. tostring(b)
 end
 

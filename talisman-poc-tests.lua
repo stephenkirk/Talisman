@@ -123,8 +123,9 @@ function test_absolute_value()
 	print("abs(-10) =" .. TalMath.abs(-10))
 
 	-- Test with BigNum
-	print("abs(1e200) =" .. TalMath.abs(1e200))
-	print("abs(-1e200) =" .. TalMath.abs(-1e200))
+	local veryBigNumber = TalMath.power(20, 300)
+	print("abs(1e200) =" .. TalMath.abs(veryBigNumber))
+	print("abs(-1e200) =" .. TalMath.abs(-veryBigNumber))
 
 	-- Test zero
 	print("abs(0) =" .. TalMath.abs(0))
