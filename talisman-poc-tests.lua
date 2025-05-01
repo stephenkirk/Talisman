@@ -14,7 +14,7 @@ function test_basic_operations()
 	-- Test subtraction
 	print("\nSubtraction tests:")
 	print("20 - 8 =" .. TalMath.subtract(20, 8))
-	print("1e200 - 1e199 = (should use BigNum)" .. TalMath.subtract(1e200, 1e199))
+	print("1e200 - 1e199 = " .. TalMath.subtract(1e200, 1e199))
 
 	-- Test multiplication
 	print("\nMultiplication tests:")
@@ -25,8 +25,8 @@ function test_basic_operations()
 	print("\nDivision tests:")
 	print("100 / 20 =" .. TalMath.divide(100, 20))
 	local result = TalMath.divide(1e300, 0.0001)
-	print("1e300 / 0.0001 = (should use BigNum)" .. TalMath.format(result) .. " (type: " .. type(result) .. ")")
-	-- print("Division by zero handling: " .. TalMath.divide(5, 0))
+	print("1e300 / 0.0001 = (should use BigNum)" .. tostring(result) .. " (type: " .. type(result) .. ")")
+	print("Division by zero handling: " .. TalMath.divide(5, 0))
 end
 
 function test_power_functions()

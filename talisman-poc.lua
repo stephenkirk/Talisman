@@ -19,8 +19,6 @@ TalMath = {
 		pi = nil, -- Cached value of pi as bignum
 		provider_check = nil, -- Have we checked which provider is available?
 		use_omeganum = false, -- Are we using OmegaNum?
-		notations = nil, -- Cached notations
-		balatro_notation = nil, -- Cached Balatro notation formatter
 	},
 }
 
@@ -33,18 +31,13 @@ function TalMath.initialize()
 	TalMath.cache.provider_check = true
 
 	-- Check if we're using bignum
-	local bignum_path = lovely.mod_dir .. "/Talisman/big-num/bignumber.lua"
+	local bignum_path = lovely.mod_dir .. "/Talisman/big-num/bignumber-poc.lua"
 	Big, err = nativefs.load(bignum_path)
 	if not err then
 		Big = Big()
 		-- Cache common constants
 		TalMath.cache.e = 2.718281828459045
 		TalMath.cache.pi = 3.14159265358979
-
-		-- Load notations
-		local Notations = nativefs.load(lovely.mod_dir .. "/Talisman/big-num/notations.lua")()
-		TalMath.cache.notations = Notations
-		TalMath.cache.balatro_notation = Notations.Balatro:new()
 	else
 		-- Fall back to regular Lua numbers
 		TalMath.config.use_bignum = false
@@ -452,6 +445,7 @@ end
 -- end
 
 -- -- Override math functions to use our safe versions
+-- questionable if we even should do this
 -- _original_math = {
 -- 	max = math.max,
 -- 	min = math.min,
