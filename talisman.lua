@@ -144,7 +144,9 @@ G.FUNCS.talisman_upd_score_opt = function(e)
 	nativefs.write(lovely.mod_dir .. "/Talisman/config.lua", STR_PACK(Talisman.config_file))
 end
 if Talisman.config_file.break_infinity then
-	Big, err = nativefs.load(lovely.mod_dir .. "/Talisman/big-num/" .. Talisman.config_file.break_infinity .. ".lua")
+	-- Big, err = nativefs.load(lovely.mod_dir .. "/Talisman/big-num/" .. Talisman.config_file.break_infinity .. ".lua")
+
+	Big, err = nativefs.load(lovely.mod_dir .. "/Talisman/big-num/" .. "bignum-poc" .. ".lua")
 	if not err then
 		Big = Big()
 	else
@@ -166,7 +168,8 @@ if Talisman.config_file.break_infinity then
 		return obj
 	end
 
-	TalMathTests = nativefs.load(lovely.mod_dir .. "/Talisman/talisman-poc-tests.lua")()
+	-- does not work with cryptid because of black magic
+	-- TalMathTests = nativefs.load(lovely.mod_dir .. "/Talisman/talisman-poc-tests.lua")()
 
 	local nf = number_format
 	function number_format(num, e_switch_point)
