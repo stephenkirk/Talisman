@@ -61,8 +61,8 @@ function TalMath.ensureBig(x)
 	return Big:new(x)
 end
 
--- Convert big number to regular number
-function TalMath.toNumber(x)
+-- Convert big number to regular number if possible
+function TalMath.normalizeNumber(x)
 	-- Already a regular number
 	if type(x) == "number" then
 		return x
@@ -72,8 +72,6 @@ function TalMath.toNumber(x)
 	if type(x) == "table" and getmetatable(x) == BigMeta then
 		-- Special handling for values too large for Lua numbers
 		if x:gt(Big:new(TalMath.config.conversion_threshold)) or x:lt(-TalMath.config.conversion_threshold) then
-			-- TODO: should probably return naneinf
-			-- but for now ...
 			return x -- Return the BigNumber itself for very large values
 		end
 
@@ -85,7 +83,6 @@ function TalMath.toNumber(x)
 	end
 
 	-- Can't convert, return as is
-	-- TODO: should probably be that we return a very huge number
 	return x
 end
 
@@ -274,7 +271,7 @@ function TalMath.power(base, exponent)
 	-- If either operand is a big number, convert base to big number
 	if type(base) == "table" or type(exponent) == "table" then
 		base = TalMath.ensureBig(base)
-		exponent = TalMath.toNumber(exponent) -- Most big number implementations want regular number exponents
+		exponent = TalMath.normalizeNumber(exponent) -- Most big number implementations want regular number exponents
 		return base:pow(exponent)
 	end
 
@@ -333,10 +330,10 @@ function TalMath.log(value, base)
 
 	-- Use big number logarithm methods
 	if type(base) == "number" and base == math.exp(1) then
-		return TalMath.toNumber(value:ln()) -- Natural logarithm
+		return TalMath.normalizeNumber(value:ln()) -- Natural logarithm
 	else
 		base = TalMath.ensureBig(base)
-		return TalMath.toNumber(value:log(base))
+		return TalMath.normalizeNumber(value:log(base))
 	end
 end
 
@@ -353,7 +350,7 @@ function TalMath.log10(value)
 	value = TalMath.ensureBig(value)
 
 	-- Use big number log10 method
-	return TalMath.toNumber(value:log10())
+	return TalMath.normalizeNumber(value:log10())
 end
 
 -- Absolute value
@@ -429,20 +426,17 @@ end
 -- MONKEY PATCHING FOR BACKWARD COMPATIBILITY
 
 -- Create backward compatibility wrappers
--- function to_big(x, y)
--- 	-- Initialize if not already done
--- 	if not TalMath.cache.provider_check then
--- 		TalMath.initialize()
--- 	end
+function to_big(x, y)
+	-- Always return big number for consistency
+	return TalMath.ensureBig(x)
+end
 
--- 	-- Always return big number for consistency
--- 	return TalMath.ensureBig(x)
--- end
+function lenient_bignum(x)
+	-- Just call our normalized function
+	return TalMath.normalizeNumber(x)
+end
 
--- function lenient_bignum(x)
--- 	-- Just call our normalized function
--- 	return TalMath.toNumber(x)
--- end
+-- TODO: Implement blind overrides etc
 
 -- -- Override math functions to use our safe versions
 -- questionable if we even should do this
@@ -501,12 +495,8 @@ end
 -- 	return TalMath.power(TalMath.cache.e or 2.718281828459045, x)
 -- end
 
--- HELPER FUNCTIONS FOR MODS
-
 -- Initialize the system when this file is loaded
 TalMath.initialize()
-
-TalMath.power(300, 300)
 
 -- Return the module
 return TalMath
