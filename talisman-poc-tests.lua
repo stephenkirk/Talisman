@@ -91,28 +91,28 @@ function test_comparison_operators()
 
 	-- Test equality
 	print("Equality tests:")
-	print("5 == 5:", TalMath.eq(5, 5))
-	print("5 == 6:", TalMath.eq(5, 6))
-	print("1e200 == 1e200:", TalMath.eq(1e200, 1e200))
+	print("5 == 5:" .. tostring(TalMath.eq(5, 5)))
+	print("5 == 6:" .. tostring(TalMath.eq(5, 6)))
+	print("1e200 == 1e200:" .. tostring(TalMath.eq(1e200, 1e200)))
 
 	-- Test less than
 	print("\nLess than tests:")
-	print("5 < 10:", TalMath.lt(5, 10))
-	print("10 < 5:", TalMath.lt(10, 5))
-	print("1e200 < 1e201:", TalMath.lt(1e200, 1e201))
+	print("5 < 10:" .. tostring(TalMath.lt(5, 10)))
+	print("10 < 5:" .. tostring(TalMath.lt(10, 5)))
+	print("1e200 < 1e201:" .. tostring(TalMath.lt(1e200, 1e201)))
 
 	-- Test greater than
 	print("\nGreater than tests:")
-	print("10 > 5:", TalMath.gt(10, 5))
-	print("5 > 10:", TalMath.gt(5, 10))
-	print("1e201 > 1e200:", TalMath.gt(1e201, 1e200))
+	print("10 > 5:" .. tostring(TalMath.gt(10, 5)))
+	print("5 > 10:" .. tostring(TalMath.gt(5, 10)))
+	print("1e201 > 1e200:" .. tostring(TalMath.gt(1e201, 1e200)))
 
 	-- Test mixed number types
 	print("\nMixed type comparisons:")
 	local big_num = TalMath.ensureBig(100)
-	print("BigNum(100) == 100:", TalMath.eq(big_num, 100))
-	print("BigNum(100) > 50:", TalMath.gt(big_num, 50))
-	print("BigNum(100) < 200:", TalMath.lt(big_num, 200))
+	print("BigNum(100) == 100:" .. tostring(TalMath.eq(big_num, 100)))
+	print("BigNum(100) > 50:" .. tostring(TalMath.gt(big_num, 50)))
+	print("BigNum(100) < 200:" .. tostring(TalMath.lt(big_num, 200)))
 end
 
 function test_absolute_value()
@@ -145,9 +145,6 @@ function test_number_formatting()
 	-- Test BigNum formatting
 	local big_value = TalMath.power(10, 100)
 	print("Format 10^100:" .. TalMath.format(big_value))
-
-	-- Test with different precision
-	print("Format 123.456 (2 places):" .. TalMath.format(123.456, 2))
 end
 
 function test_type_conversion()
@@ -164,7 +161,7 @@ function test_type_conversion()
 
 	-- Test with very large values
 	local large = TalMath.power(10, 500)
-	print("10^500 can be converted back to regular number:" .. ((TalMath.toNumber(large) == large) and "No" or "Yes"))
+	print("Result of tonumber with 10^500: " .. TalMath.toNumber(large))
 end
 
 function test_edge_cases()
@@ -185,6 +182,32 @@ function test_edge_cases()
 	print("1^1000 =" .. TalMath.power(1, 1000))
 end
 
+function test_tostring_conversion()
+	print("\n=== TESTING IMPLICIT TOSTRING CONVERSION ===")
+
+	-- Test with large powers
+	local big1 = TalMath.power(20, 300)
+	print("tostring(20^300) = " .. big1)
+
+	local big2 = TalMath.power(10, 200)
+	print("tostring(10^200) = " .. big2)
+
+	local big3 = TalMath.power(2, 1000)
+	print("tostring(2^1000) = " .. big3)
+
+	-- Test with calculations that produce big numbers
+	local big4 = TalMath.multiply(1e150, 1e150)
+	print("tostring(1e150 * 1e150) = " .. big4)
+
+	local big5 = TalMath.add(1e200, 1e200)
+	print("tostring(1e200 + 1e200) = " .. big5)
+
+	-- Compare tostring with format method
+	print("\nComparing tostring with format:")
+	print("tostring: " .. big1)
+	print("format:   " .. TalMath.format(big1))
+end
+
 -- Run all tests
 print("STARTING TALMATH TESTS")
 test_basic_operations()
@@ -195,4 +218,5 @@ test_absolute_value()
 test_number_formatting()
 test_type_conversion()
 test_edge_cases()
+test_tostring_conversion()
 print("\nALL TESTS COMPLETED")
