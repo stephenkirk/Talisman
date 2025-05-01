@@ -25,7 +25,7 @@ function test_basic_operations()
 	print("\nDivision tests:")
 	print("100 / 20 =" .. TalMath.divide(100, 20))
 	local result = TalMath.divide(1e300, 0.0001)
-	print("1e300 / 0.0001 = (should use BigNum)" .. tostring(result) .. " (type: " .. type(result) .. ")")
+	print("1e300 / 0.0001 = (should use BigNum)" .. result .. " (type: " .. type(result) .. ")")
 	print("Division by zero handling: " .. TalMath.divide(5, 0))
 end
 
