@@ -201,7 +201,6 @@ function to_big(x, y)
 		return x
 	end
 
-	print("Calling tobig with value" .. x)
 	-- Always return big number for consistency
 	print(TalMath.ensureBig(x))
 	return TalMath.ensureBig(x)
@@ -224,6 +223,17 @@ function is_number(x)
 	return false
 end
 
+-- -- Helper function for conversion between bignums and regular numbers
+function lenient_bignum(x)
+	if type(x) == "number" then
+		return x
+	end
+	if to_big(x) < to_big(1e300) and to_big(x) > to_big(-1e300) then
+		return x:to_number()
+	end
+	return x
+end
+
 -- -- Overrides for native math functions to handle big numbers
 -- local mf = math.floor
 -- function math.floor(x)
@@ -239,17 +249,6 @@ end
 -- 		return x:ceil()
 -- 	end
 -- 	return mc(x)
--- end
-
--- -- Helper function for conversion between bignums and regular numbers
--- function lenient_bignum(x)
--- 	if type(x) == "number" then
--- 		return x
--- 	end
--- 	if to_big(x) < to_big(1e300) and to_big(x) > to_big(-1e300) then
--- 		return x:to_number()
--- 	end
--- 	return x
 -- end
 
 -- -- Overrides for math functions to handle big numbers
@@ -322,7 +321,6 @@ end
 -- end
 
 -- Replace number_format with TalMath version
--- TODO: Breaks opening anything else than main menu
 local nf = number_format
 function number_format(num, e_switch_point)
 	-- Use TalMath's formatting
@@ -508,7 +506,11 @@ function mod_mult(value)
 end
 
 -- Scale number implementation
+-- Dynamically reduces the scale factor for large numbers to prevent UI overflow,
+-- using logarithmic scaling based on the number's magnitude
 -- TODO: This currently breaks starting a new game
+-- and might be... unnecessary...? since bignum supports operations etc
+-- But...
 -- function scale_number(number, scale, max, e_switch_point)
 -- 	if not Big then
 -- 		return scale
@@ -539,97 +541,18 @@ end
 -- end
 
 -- Blind amount calculation
--- function get_blind_amount(ante)
--- 	if G.GAME.modifiers.scaling and G.GAME.modifiers.scaling > 3 then
--- 		return SMODS.get_blind_amount(ante)
--- 	end
--- 	if type(to_big(1)) == "number" then
--- 		return gba(ante)
--- 	end
--- 	local k = to_big(0.75)
--- 	if not G.GAME.modifiers.scaling or G.GAME.modifiers.scaling == 1 then
--- 		local amounts = {
--- 			to_big(300),
--- 			to_big(800),
--- 			to_big(2000),
--- 			to_big(5000),
--- 			to_big(11000),
--- 			to_big(20000),
--- 			to_big(35000),
--- 			to_big(50000),
--- 		}
--- 		if ante < 1 then
--- 			return to_big(100)
--- 		end
--- 		if ante <= 8 then
--- 			return amounts[ante]
--- 		end
--- 		local a, b, c, d = amounts[8], 1.6, ante - 8, 1 + 0.2 * (ante - 8)
--- 		local amount = a * (b + (k * c) ^ d) ^ c
--- 		if amount:lt(R.E_MAX_SAFE_INTEGER) then
--- 			local exponent = to_big(10) ^ (math.floor(amount:log10() - to_big(1))):to_number()
--- 			amount = math.floor(amount / exponent):to_number() * exponent
--- 		end
--- 		amount:normalize()
--- 		return amount
--- 	elseif G.GAME.modifiers.scaling == 2 then
--- 		local amounts = {
--- 			to_big(300),
--- 			to_big(900),
--- 			to_big(2600),
--- 			to_big(8000),
--- 			to_big(20000),
--- 			to_big(36000),
--- 			to_big(60000),
--- 			to_big(100000),
--- 		}
--- 		if ante < 1 then
--- 			return to_big(100)
--- 		end
--- 		if ante <= 8 then
--- 			return amounts[ante]
--- 		end
--- 		local a, b, c, d = amounts[8], 1.6, ante - 8, 1 + 0.2 * (ante - 8)
--- 		local amount = a * (b + (k * c) ^ d) ^ c
--- 		if amount:lt(R.E_MAX_SAFE_INTEGER) then
--- 			local exponent = to_big(10) ^ (math.floor(amount:log10() - to_big(1))):to_number()
--- 			amount = math.floor(amount / exponent):to_number() * exponent
--- 		end
--- 		amount:normalize()
--- 		return amount
--- 	elseif G.GAME.modifiers.scaling == 3 then
--- 		local amounts = {
--- 			to_big(300),
--- 			to_big(1000),
--- 			to_big(3200),
--- 			to_big(9000),
--- 			to_big(25000),
--- 			to_big(60000),
--- 			to_big(110000),
--- 			to_big(200000),
--- 		}
--- 		if ante < 1 then
--- 			return to_big(100)
--- 		end
--- 		if ante <= 8 then
--- 			return amounts[ante]
--- 		end
--- 		local a, b, c, d = amounts[8], 1.6, ante - 8, 1 + 0.2 * (ante - 8)
--- 		local amount = a * (b + (k * c) ^ d) ^ c
--- 		if amount:lt(R.E_MAX_SAFE_INTEGER) then
--- 			local exponent = to_big(10) ^ (math.floor(amount:log10() - to_big(1))):to_number()
--- 			amount = math.floor(amount / exponent):to_number() * exponent
--- 		end
--- 		amount:normalize()
--- 		return amount
--- 	end
--- end
+-- TODO: Determine if this is necessary
+-- But at least good news that it works with big numbers
+local gba = get_blind_amount -- vanilla
+function get_blind_amount(ante)
+	return to_big(gba(ante))
+end
 
--- if SMODS then
--- 	function SMODS.get_blind_amount(ante)
--- 		return get_blind_amount(ante)
--- 	end
--- end
+if SMODS then
+	function SMODS.get_blind_amount(ante)
+		return get_blind_amount(ante)
+	end
+end
 
 -- Check and set high score (simplified version)
 function check_and_set_high_score(score, amt)

@@ -391,9 +391,25 @@ function format123(value, places)
 		return "0"
 	end
 
-	-- Format regular numbers using vanilla formatter for non-big numbers
+	-- Format regular numbers using vanilla-ish formatter for non-big numbers
 	if type(value) == "number" and math.abs(value) < TalMath.config.display_threshold then
-		return number_format(value, TalMath.config.display_threshold)
+		local formatString = "%.0f" -- Default for integers and numbers >= 100
+		if value ~= math.floor(value) then -- If it's not an integer
+			if value < 10 then
+				formatString = "%.2f"
+			elseif value < 100 then
+				formatString = "%.1f"
+			end
+		end
+
+		-- Format with proper decimal places
+		local formatted = string.format(formatString, value)
+
+		-- Add thousands separators
+		local wholePart, decimalPart = formatted:match("([^.]+)(.*)") -- Split at decimal point
+		wholePart = wholePart:reverse():gsub("(%d%d%d)", "%1,"):gsub(",$", ""):reverse()
+
+		return wholePart .. decimalPart
 	end
 
 	-- For big numbers, use scientific notation
