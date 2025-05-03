@@ -193,7 +193,7 @@ end
 
 -- Global to_big function - use TalMath's implementation
 function to_big(x, y)
-	if type(x) == "string" or x == "0" or x == "nil" then
+	if type(x) == "string" or x == "0" or type(x) == "nil" then
 		return 0
 	end
 
