@@ -425,52 +425,49 @@ function tal_uht(config, vals)
 end
 
 -- Override update_hand_text to support animation disabling
--- local uht = update_hand_text
--- function update_hand_text(config, vals)
--- 	if Talisman.config_file.disable_anims then
--- 		if G.latest_uht then
--- 			local chips = G.latest_uht.vals.chips
--- 			local mult = G.latest_uht.vals.mult
--- 			if not vals.chips then
--- 				vals.chips = chips
--- 			end
--- 			if not vals.mult then
--- 				vals.mult = mult
--- 			end
--- 		end
--- 		G.latest_uht = { config = config, vals = vals }
--- 	else
--- 		uht(config, vals)
--- 	end
--- end
-
--- TODO: Add remaining functions that need to be reimplemented
--- For now, we've implemented the core math functions and some UI display
+local uht = update_hand_text
+function update_hand_text(config, vals)
+	if Talisman.config_file.disable_anims then
+		if G.latest_uht then
+			local chips = G.latest_uht.vals.chips
+			local mult = G.latest_uht.vals.mult
+			if not vals.chips then
+				vals.chips = chips
+			end
+			if not vals.mult then
+				vals.mult = mult
+			end
+		end
+		G.latest_uht = { config = config, vals = vals }
+	else
+		uht(config, vals)
+	end
+end
 
 -- STEAMODDED INTEGRATION
 -- This would need to be implemented based on whether SMODS is available
--- if SMODS and SMODS.calculate_individual_effect then
--- 	-- Add implementation for SMODS integration
--- 	-- Similar to the original talisman.lua's implementation
--- end
+if SMODS and SMODS.calculate_individual_effect then
+	-- Add implementation for SMODS integration
+	-- Similar to the original talisman.lua's implementation
+end
 
 -- BASIC GAME LOOP HOOKS
 -- This ensures TalMath is fully initialized and doesn't interfere with animations
 
 -- Game update hook to ensure text updates
--- local upd = Game.update
--- function Game:update(dt)
--- 	upd(self, dt)
--- 	if G.latest_uht and G.latest_uht.config and G.latest_uht.vals then
--- 		tal_uht(G.latest_uht.config, G.latest_uht.vals)
--- 		G.latest_uht = nil
--- 	end
--- 	if Talisman.dollar_update then
--- 		G.HUD:get_UIE_by_ID("dollar_text_UI").config.object:update()
--- 		G.HUD:recalculate()
--- 		Talisman.dollar_update = false
--- 	end
--- end
+local upd = Game.update
+function Game:update(dt)
+	upd(self, dt)
+	if G.latest_uht and G.latest_uht.config and G.latest_uht.vals then
+		tal_uht(G.latest_uht.config, G.latest_uht.vals)
+		G.latest_uht = nil
+	end
+	if Talisman.dollar_update then
+		G.HUD:get_UIE_by_ID("dollar_text_UI").config.object:update()
+		G.HUD:recalculate()
+		Talisman.dollar_update = false
+	end
+end
 
 -- Safe string unpacking with environment restrictions
 function safe_str_unpack(str)
@@ -492,24 +489,25 @@ function safe_str_unpack(str)
 	end
 end
 
--- local g_start_up = G.start_up
--- function G:start_up()
--- 	STR_UNPACK = safe_str_unpack
--- 	g_start_up(self)
--- 	STR_UNPACK = safe_str_unpack
--- end
+local g_start_up = G.start_up
+function G:start_up()
+	STR_UNPACK = safe_str_unpack
+	g_start_up(self)
+	STR_UNPACK = safe_str_unpack
+end
 
--- function mod_chips(value)
--- 	-- Simply pass through for now
--- 	return value
--- end
+function mod_chips(value)
+	-- Simply pass through for now
+	return value
+end
 
--- function mod_mult(value)
--- 	-- Simply pass through for now
--- 	return value
--- end
+function mod_mult(value)
+	-- Simply pass through for now
+	return value
+end
 
 -- Scale number implementation
+-- TODO: This currently breaks starting a new game
 -- function scale_number(number, scale, max, e_switch_point)
 -- 	if not Big then
 -- 		return scale
@@ -664,27 +662,28 @@ function inc_career_stat(stat, mod)
 	G:save_settings()
 end
 
--- Add minimal evaluate_play to get game booting
-G.FUNCS.evaluate_play = function(e)
-	text, disp_text, poker_hands, scoring_hand, non_loc_disp_text, percent, percent_delta = evaluate_play_intro()
-	if not G.GAME.blind:debuff_hand(G.play.cards, poker_hands, text) then
-		text, disp_text, poker_hands, scoring_hand, non_loc_disp_text, percent, percent_delta =
-			evaluate_play_main(text, disp_text, poker_hands, scoring_hand, non_loc_disp_text, percent, percent_delta)
-	else
-		text, disp_text, poker_hands, scoring_hand, non_loc_disp_text, percent, percent_delta =
-			evaluate_play_debuff(text, disp_text, poker_hands, scoring_hand, non_loc_disp_text, percent, percent_delta)
-	end
-	text, disp_text, poker_hands, scoring_hand, non_loc_disp_text, percent, percent_delta = evaluate_play_final_scoring(
-		text,
-		disp_text,
-		poker_hands,
-		scoring_hand,
-		non_loc_disp_text,
-		percent,
-		percent_delta
-	)
-	evaluate_play_after(text, disp_text, poker_hands, scoring_hand, non_loc_disp_text, percent, percent_delta)
-end
+-- Evaluate play Overrides
+-- TODO: This currently breaks playing a hand
+-- G.FUNCS.evaluate_play = function(e)
+-- 	text, disp_text, poker_hands, scoring_hand, non_loc_disp_text, percent, percent_delta = evaluate_play_intro()
+-- 	if not G.GAME.blind:debuff_hand(G.play.cards, poker_hands, text) then
+-- 		text, disp_text, poker_hands, scoring_hand, non_loc_disp_text, percent, percent_delta =
+-- 			evaluate_play_main(text, disp_text, poker_hands, scoring_hand, non_loc_disp_text, percent, percent_delta)
+-- 	else
+-- 		text, disp_text, poker_hands, scoring_hand, non_loc_disp_text, percent, percent_delta =
+-- 			evaluate_play_debuff(text, disp_text, poker_hands, scoring_hand, non_loc_disp_text, percent, percent_delta)
+-- 	end
+-- 	text, disp_text, poker_hands, scoring_hand, non_loc_disp_text, percent, percent_delta = evaluate_play_final_scoring(
+-- 		text,
+-- 		disp_text,
+-- 		poker_hands,
+-- 		scoring_hand,
+-- 		non_loc_disp_text,
+-- 		percent,
+-- 		percent_delta
+-- 	)
+-- 	evaluate_play_after(text, disp_text, poker_hands, scoring_hand, non_loc_disp_text, percent, percent_delta)
+-- end
 
 function ease_dollars(mod, instant)
 	if Talisman.config_file.disable_anims then
