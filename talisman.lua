@@ -322,11 +322,12 @@ end
 -- end
 
 -- Replace number_format with TalMath version
--- local nf = number_format
--- function number_format(num, e_switch_point)
--- 	-- Use TalMath's formatting
--- 	return TalMath.format(num)
--- end
+-- TODO: Breaks opening anything else than main menu
+local nf = number_format
+function number_format(num, e_switch_point)
+	-- Use TalMath's formatting
+	return TalMath.format(num)
+end
 
 -- Copy over animation-related functions as-is for now
 -- These will need to be replaced with cleaner implementations, but for a
