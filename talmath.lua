@@ -385,7 +385,6 @@ function TalMath.eq(a, b)
 		return a:eq(b)
 	end
 
-	-- Fallback
 	return a == b
 end
 
@@ -419,84 +418,8 @@ function TalMath.gt(a, b)
 		return a:gt(b)
 	end
 
-	-- Fallback
 	return a > b
 end
 
--- MONKEY PATCHING FOR BACKWARD COMPATIBILITY
-
--- Create backward compatibility wrappers
-function to_big(x, y)
-	-- Always return big number for consistency
-	return TalMath.ensureBig(x)
-end
-
-function lenient_bignum(x)
-	-- Just call our normalized function
-	return TalMath.normalizeNumber(x)
-end
-
--- TODO: Implement blind overrides etc
-
--- -- Override math functions to use our safe versions
--- questionable if we even should do this
--- _original_math = {
--- 	max = math.max,
--- 	min = math.min,
--- 	abs = math.abs,
--- 	sqrt = math.sqrt,
--- 	log = math.log,
--- 	log10 = math.log10,
--- 	exp = math.exp,
--- }
-
--- function math.max(x, y)
--- 	-- Use simple comparison to determine maximum
--- 	if TalMath.gt(x, y) then
--- 		return x
--- 	else
--- 		return y
--- 	end
--- end
-
--- function math.min(x, y)
--- 	-- Use simple comparison to determine minimum
--- 	if TalMath.lt(x, y) then
--- 		return x
--- 	else
--- 		return y
--- 	end
--- end
-
--- function math.abs(x)
--- 	return TalMath.abs(x)
--- end
-
--- function math.sqrt(x)
--- 	-- Fast path for regular numbers
--- 	if type(x) == "number" then
--- 		return _original_math.sqrt(x)
--- 	end
-
--- 	-- Delegate to big number sqrt
--- 	return TalMath.power(x, 0.5)
--- end
-
--- function math.log(x, base)
--- 	return TalMath.log(x, base)
--- end
-
--- function math.log10(x)
--- 	return TalMath.log10(x)
--- end
-
--- function math.exp(x)
--- 	-- Use cached e value
--- 	return TalMath.power(TalMath.cache.e or 2.718281828459045, x)
--- end
-
--- Initialize the system when this file is loaded
 TalMath.initialize()
-
--- Return the module
 return TalMath

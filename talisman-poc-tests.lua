@@ -1,7 +1,7 @@
 local nativefs = require("nativefs")
 local lovely = require("lovely")
 
-local TalMath = nativefs.load(lovely.mod_dir .. "/Talisman/talisman-poc.lua")()
+local TalMath = nativefs.load(lovely.mod_dir .. "/Talisman/talmath.lua")()
 
 function test_basic_operations()
 	print("\n=== TESTING BASIC OPERATIONS ===")
@@ -156,12 +156,12 @@ function test_type_conversion()
 	print("ensureBig(42) type:" .. type(big))
 
 	-- Test converting back
-	local converted = TalMath.toNumber(big)
+	local converted = TalMath.normalizeNumber(big)
 	print("toNumber(bignum) =" .. converted .. " type:" .. type(converted))
 
 	-- Test with very large values
 	local large = TalMath.power(10, 500)
-	print("Result of tonumber with 10^500: " .. TalMath.toNumber(large))
+	print("Result of tonumber with 10^500: " .. TalMath.normalizeNumber(large))
 end
 
 function test_edge_cases()
