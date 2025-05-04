@@ -62,33 +62,34 @@ function TalMath.ensureBig(x)
 end
 
 -- Convert big number to regular number if possible
-function TalMath.normalizeNumber(x)
+function TalMath.normalizeNumber(number)
 	-- Already a regular number
-	if type(x) == "number" then
-		return x
+	if type(number) == "number" then
+		return number
 	end
 
 	-- Try to convert big number to regular number
-	if type(x) == "table" and getmetatable(x) == BigMeta then
+	if type(number) == "table" and getmetatable(number) == BigMeta then
 		-- Special handling for values too large for Lua numbers
-		if x:gt(Big:new(TalMath.config.conversion_threshold)) or x:lt(-TalMath.config.conversion_threshold) then
-			return x -- Return the BigNumber itself for very large values
+		if
+			number:gt(Big:new(TalMath.config.conversion_threshold)) or number:lt(-TalMath.config.conversion_threshold)
+		then
+			return TalMath.config.conversion_threshold
 		end
 
-		local value = x:to_number()
-		-- Check if result is valid and in range
-		if value == value and value ~= math.huge and value ~= -math.huge then
-			return value
-		end
+		return number:to_number()
 	end
 
 	-- Can't convert, return as is
-	return x
+	-- should never run
+	print("Unexpected error: you shouldn't get here")
+	return number
 end
 
 -- Format a number for display using Balatro's formatting system
+-- TODO: Need to check this implementation because 1.450666453345345e23
+-- has a lot of digits ;)
 function TalMath.format(value, places)
-	print(value)
 	places = places or 3
 
 	if value == nil then
@@ -120,6 +121,12 @@ function TalMath.format(value, places)
 		return wholePart .. decimalPart
 	end
 
+	if type(value) == "number" and value >= 10 ^ 6 then
+		local x = string.format("%.4g", value)
+		local fac = math.floor(math.log(tonumber(x), 10))
+		return string.format("%.3f", x / (10 ^ fac)) .. "e" .. fac
+	end
+
 	-- For big numbers, use scientific notation
 	-- TODO replicate notations/Balatro.lua here without to_big fuckery
 	if type(value) == "table" then
@@ -132,6 +139,7 @@ function TalMath.format(value, places)
 	end
 
 	-- Last resort fallback
+	-- todo: prob bypasses things now
 	return tostring(value)
 end
 
