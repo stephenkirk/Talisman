@@ -190,6 +190,9 @@ if Talisman.config_file.break_infinity then
 end
 
 -- GLOBAL FUNCTION WRAPPERS FOR COMPATIBILITY
+function abs(x)
+	return TalMath.abs(x)
+end
 
 -- Global to_big function - use TalMath's implementation
 function to_big(x, y)
