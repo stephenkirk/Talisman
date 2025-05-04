@@ -226,7 +226,8 @@ function is_number(x)
 	return false
 end
 
--- -- Helper function for conversion between bignums and regular numbers
+-- Helper function for conversion between bignums and regular numbers
+-- Cast to number if possible, else stay in bignum land
 function lenient_bignum(x)
 	if type(x) == "number" then
 		return x
@@ -513,7 +514,7 @@ end
 -- using logarithmic scaling based on the number's magnitude
 -- TODO: This currently breaks starting a new game
 -- and might be... unnecessary...? since bignum supports operations etc
--- But...
+-- But... right now things render quite funky :)
 -- function scale_number(number, scale, max, e_switch_point)
 -- 	if not Big then
 -- 		return scale
