@@ -18,6 +18,8 @@ if not TalMath then
 	error("Failed to load TalMath. Please ensure talmath.lua exists and is valid.")
 end
 
+local TalMathTests = nativefs.load(lovely.mod_dir .. "/Talisman/talisman-poc-tests.lua")()
+
 -- "Borrowed" from Trance - Keep this for compatibility
 function load_file_with_fallback2(a, aa)
 	local success, result = pcall(function()

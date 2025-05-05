@@ -208,6 +208,70 @@ function test_tostring_conversion()
 	print("format:   " .. TalMath.format(big1))
 end
 
+function test_mixed_operators()
+	print("\n=== TESTING MIXED OPERATORS ===")
+
+	-- Test addition operator
+	local big100 = TalMath.ensureBig(100)
+	print("Addition operator test:")
+	print("BigNum(100) + 200 = " .. (big100 + 200))
+	print("300 + BigNum(700) = " .. (300 + TalMath.ensureBig(700)))
+
+	-- Test subtraction operator
+	print("\nSubtraction operator test:")
+	print("BigNum(500) - 200 = " .. (TalMath.ensureBig(500) - 200))
+	print("1000 - BigNum(300) = " .. (1000 - TalMath.ensureBig(300)))
+
+	-- Test multiplication operator
+	print("\nMultiplication operator test:")
+	print("BigNum(50) * 20 = " .. (TalMath.ensureBig(50) * 20))
+	print("30 * BigNum(40) = " .. (30 * TalMath.ensureBig(40)))
+
+	-- Test division operator
+	print("\nDivision operator test:")
+	print("BigNum(1000) / 20 = " .. (TalMath.ensureBig(1000) / 20))
+	print("5000 / BigNum(25) = " .. (5000 / TalMath.ensureBig(25)))
+
+	-- Test with very large numbers
+	print("\nLarge number operator tests:")
+	local veryBig = TalMath.power(10, 100)
+	print("10^100 + 5000 = " .. (veryBig + 5000))
+	print("10^100 * 2 = " .. (veryBig * 2))
+	print("10^100 / 10 = " .. (veryBig / 10))
+end
+
+function test_mixed_operators_reverse()
+	print("\n=== TESTING MIXED OPERATORS WITH NUMBER ON LEFT ===")
+
+	-- Test addition operator
+	local big100 = TalMath.ensureBig(100)
+	print("Addition operator test:")
+	print("200 + BigNum(100) = " .. (200 + big100))
+	print("TalMath.ensureBig(700) + 300 = " .. (TalMath.ensureBig(700) + 300))
+
+	-- Test subtraction operator
+	print("\nSubtraction operator test:")
+	print("200 - BigNum(500) = " .. (200 - TalMath.ensureBig(500)))
+	print("TalMath.ensureBig(300) - 1000 = " .. (TalMath.ensureBig(300) - 1000))
+
+	-- Test multiplication operator
+	print("\nMultiplication operator test:")
+	print("20 * BigNum(50) = " .. (20 * TalMath.ensureBig(50)))
+	print("TalMath.ensureBig(40) * 30 = " .. (TalMath.ensureBig(40) * 30))
+
+	-- Test division operator
+	print("\nDivision operator test:")
+	print("20 / BigNum(1000) = " .. (20 / TalMath.ensureBig(1000)))
+	print("TalMath.ensureBig(25) / 5000 = " .. (TalMath.ensureBig(25) / 5000))
+
+	-- Test with very large numbers
+	print("\nLarge number operator tests:")
+	local veryBig = TalMath.power(10, 100)
+	print("5000 + 10^100 = " .. (5000 + veryBig))
+	print("2 * 10^100 = " .. (2 * veryBig))
+	print("10 / 10^100 = " .. (10 / veryBig))
+end
+
 -- Run all tests
 print("STARTING TALMATH TESTS")
 test_basic_operations()
@@ -219,4 +283,6 @@ test_number_formatting()
 test_type_conversion()
 test_edge_cases()
 test_tostring_conversion()
+test_mixed_operators()
+test_mixed_operators_reverse()
 print("\nALL TESTS COMPLETED")
