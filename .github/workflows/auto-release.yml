@@ -3,19 +3,19 @@ name: Auto Release
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
     paths-ignore:
-      - '**.md'
-      - '.gitignore'
-      - 'LICENSE'
+      - "**.md"
+      - ".gitignore"
+      - "LICENSE"
 
   # Manual trigger option
   workflow_dispatch:
     inputs:
       version_bump:
-        description: 'Version bump type'
+        description: "Version bump type"
         required: true
-        default: 'patch'
+        default: "patch"
         type: choice
         options:
           - patch
@@ -27,124 +27,125 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-      
+
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
-        
-    - name: Get latest tag
-      id: get_tag
-      run: |
-        LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
-        echo "latest_tag=$LATEST_TAG" >> $GITHUB_OUTPUT
-        
-    - name: Calculate next version
-      id: next_version
-      run: |
-        LATEST_TAG="${{ steps.get_tag.outputs.latest_tag }}"
-        
-        VERSION=${LATEST_TAG#v}
-        
-        # Split version into parts
-        IFS='.' read -ra VERSION_PARTS <<< "$VERSION"
-        MAJOR=${VERSION_PARTS[0]:-0}
-        MINOR=${VERSION_PARTS[1]:-0}
-        PATCH=${VERSION_PARTS[2]:-0}
-        
-        # Determine bump type
-        if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-          BUMP_TYPE="${{ github.event.inputs.version_bump }}"
-        else
-          # Auto-determine based on commit messages
-          COMMITS=$(git log $LATEST_TAG..HEAD --oneline)
-          if echo "$COMMITS" | grep -i "breaking\|major"; then
-            BUMP_TYPE="major"
-          elif echo "$COMMITS" | grep -i "feat\|feature\|minor"; then
-            BUMP_TYPE="minor"
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get latest tag
+        id: get_tag
+        run: |
+          echo "$(git describe --tags --abbrev=0)"
+          LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+          echo "latest_tag=$LATEST_TAG" >> $GITHUB_OUTPUT
+
+      - name: Calculate next version
+        id: next_version
+        run: |
+          LATEST_TAG="${{ steps.get_tag.outputs.latest_tag }}"
+
+          VERSION=${LATEST_TAG#v}
+
+          # Split version into parts
+          IFS='.' read -ra VERSION_PARTS <<< "$VERSION"
+          MAJOR=${VERSION_PARTS[0]:-0}
+          MINOR=${VERSION_PARTS[1]:-0}
+          PATCH=${VERSION_PARTS[2]:-0}
+
+          # Determine bump type
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            BUMP_TYPE="${{ github.event.inputs.version_bump }}"
           else
-            BUMP_TYPE="patch"
+            # Auto-determine based on commit messages
+            COMMITS=$(git log $LATEST_TAG..HEAD --oneline)
+            if echo "$COMMITS" | grep -i "breaking\|major"; then
+              BUMP_TYPE="major"
+            elif echo "$COMMITS" | grep -i "feat\|feature\|minor"; then
+              BUMP_TYPE="minor"
+            else
+              BUMP_TYPE="patch"
+            fi
           fi
-        fi
-        
-        # Calculate new version
-        case $BUMP_TYPE in
-          major)
-            MAJOR=$((MAJOR + 1))
-            MINOR=0
-            PATCH=0
-            ;;
-          minor)
-            MINOR=$((MINOR + 1))
-            PATCH=0
-            ;;
-          patch)
-            PATCH=$((PATCH + 1))
-            ;;
-        esac
-        
-        NEW_VERSION="v$MAJOR.$MINOR.$PATCH"
-        echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
-        echo "bump_type=$BUMP_TYPE" >> $GITHUB_OUTPUT
-        
-    - name: Generate changelog
-      id: changelog
-      run: |
-        LATEST_TAG="${{ steps.get_tag.outputs.latest_tag }}"
-        
-        if [ "$LATEST_TAG" = "v0.0.0" ]; then
-          CHANGELOG=$(git log --oneline --pretty=format:"- %s" | head -20)
-        else
-          CHANGELOG=$(git log $LATEST_TAG..HEAD --oneline --pretty=format:"- %s")
-        fi
-        
-        if [ -z "$CHANGELOG" ]; then
-          CHANGELOG="- Minor updates and improvements"
-        fi
-        
-        echo "$CHANGELOG" > changelog.txt
-        
-    - name: Create release archive
-      run: |
-        REPO_NAME=$(basename $GITHUB_REPOSITORY)
-        VERSION="${{ steps.next_version.outputs.new_version }}"
-        
-        git archive --format=zip --prefix="$REPO_NAME-$VERSION/" HEAD > "$REPO_NAME-$VERSION.zip"
-        
-        echo "archive_name=$REPO_NAME-$VERSION.zip" >> $GITHUB_ENV
-        
-    - name: Create Release
-      id: create_release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: ${{ steps.next_version.outputs.new_version }}
-        release_name: Release ${{ steps.next_version.outputs.new_version }}
-        body: |
-          ## Changes in ${{ steps.next_version.outputs.new_version }}
-          
-          **Release Type:** ${{ steps.next_version.outputs.bump_type }} version bump
-          
-          ### What's Changed
-          $(cat changelog.txt)
-          
-          ### Download
-          - **Source Code:** Download the zip file below
-          - **Repository:** [View on GitHub](${{ github.server_url }}/${{ github.repository }})
-          
-          ---
-          *This release was automatically generated by GitHub Actions*
-        draft: false
-        prerelease: false
-        
-    - name: Upload Release Asset
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./${{ env.archive_name }}
-        asset_name: ${{ env.archive_name }}
-        asset_content_type: application/zip
+
+          # Calculate new version
+          case $BUMP_TYPE in
+            major)
+              MAJOR=$((MAJOR + 1))
+              MINOR=0
+              PATCH=0
+              ;;
+            minor)
+              MINOR=$((MINOR + 1))
+              PATCH=0
+              ;;
+            patch)
+              PATCH=$((PATCH + 1))
+              ;;
+          esac
+
+          NEW_VERSION="v$MAJOR.$MINOR.$PATCH"
+          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "bump_type=$BUMP_TYPE" >> $GITHUB_OUTPUT
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          LATEST_TAG="${{ steps.get_tag.outputs.latest_tag }}"
+
+          if [ "$LATEST_TAG" = "v0.0.0" ]; then
+            CHANGELOG=$(git log --oneline --pretty=format:"- %s" | head -20)
+          else
+            CHANGELOG=$(git log $LATEST_TAG..HEAD --oneline --pretty=format:"- %s")
+          fi
+
+          if [ -z "$CHANGELOG" ]; then
+            CHANGELOG="- Minor updates and improvements"
+          fi
+
+          echo "$CHANGELOG" > changelog.txt
+
+      - name: Create release archive
+        run: |
+          REPO_NAME=$(basename $GITHUB_REPOSITORY)
+          VERSION="${{ steps.next_version.outputs.new_version }}"
+
+          git archive --format=zip --prefix="$REPO_NAME-$VERSION/" HEAD > "$REPO_NAME-$VERSION.zip"
+
+          echo "archive_name=$REPO_NAME-$VERSION.zip" >> $GITHUB_ENV
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.next_version.outputs.new_version }}
+          release_name: Release ${{ steps.next_version.outputs.new_version }}
+          body: |
+            ## Changes in ${{ steps.next_version.outputs.new_version }}
+
+            **Release Type:** ${{ steps.next_version.outputs.bump_type }} version bump
+
+            ### What's Changed
+            $(cat changelog.txt)
+
+            ### Download
+            - **Source Code:** Download the zip file below
+            - **Repository:** [View on GitHub](${{ github.server_url }}/${{ github.repository }})
+
+            ---
+            *This release was automatically generated by GitHub Actions*
+          draft: false
+          prerelease: false
+
+      - name: Upload Release Asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./${{ env.archive_name }}
+          asset_name: ${{ env.archive_name }}
+          asset_content_type: application/zip
