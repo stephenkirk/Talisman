@@ -2,7 +2,7 @@
 name: Auto Release
 
 on:
-   push:
+  push:
     branches: [ main ]
     paths-ignore:
       - '**.md'
