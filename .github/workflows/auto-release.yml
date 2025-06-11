@@ -37,13 +37,13 @@ jobs:
       - name: Get latest tag
         id: get_tag
         run: |
-          echo "tag=${GITHUB_REF#refs/*/}" >> $GITHUB_OUTPUT
-
+          echo "latest_tag=${GITHUB_REF#refs/*/}" >> $GITHUB_OUTPUT
       - name: Calculate next version
         id: next_version
+        env:
+          LATEST_TAG: "${{ steps.get_tag.outputs.latest_tag }}"
         run: |
-          LATEST_TAG="${{ steps.get_tag.outputs.latest_tag }}"
-
+          echo $LATEST_TAG
           VERSION=${LATEST_TAG#v}
 
           # Split version into parts
